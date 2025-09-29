@@ -1,0 +1,4 @@
+id,email,phone
+1001,voter1@test.com,1234567890
+1002,voter2@test.com,1234567891
+1003,voter3@test.com,1234567892
