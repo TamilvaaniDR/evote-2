@@ -23,8 +23,8 @@ const LoginPage: React.FC = () => {
       }
       // Minimal flow: send identify request without election to help user proceed
       // In a real flow you might list active elections after identify
-      setVoterMessage('Identification received. Redirecting to Home to pick an election...');
-      setTimeout(() => navigate('/home'), 800);
+      setVoterMessage('Identification received. Redirecting to your account...');
+      setTimeout(() => navigate('/account'), 800);
     } catch (e: any) {
       setError(e.response?.data?.message || 'Failed to proceed');
     }

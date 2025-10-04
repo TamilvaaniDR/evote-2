@@ -10,19 +10,28 @@ import {
   Chip,
   Alert,
   CircularProgress,
+  Menu,
+  MenuItem,
+  ListItemIcon,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
   HowToVote as VoteIcon,
   Assessment as ResultsIcon,
+  Logout as LogoutIcon,
+  AccountCircle as AccountIcon,
+  Home as HomeIcon,
+  ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { voterAPI } from '../../services/api';
 import { Election } from '../../types';
 import { format } from 'date-fns';
 import dayjs from 'dayjs';
+import { useVoter } from '../../contexts/VoterContext';
 
 const VoterHome: React.FC = () => {
+  const { voterToken, voter, setVoter } = useVoter();
   const [elections, setElections] = useState<Election[]>([]);
   const [runningElections, setRunningElections] = useState<Election[]>([]);
   const [eligibleElections, setEligibleElections] = useState<Election[]>([]);
@@ -34,10 +43,33 @@ const VoterHome: React.FC = () => {
   const [identifier, setIdentifier] = useState('');
   const navigate = useNavigate();
   const [tick, setTick] = useState(0);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const isMenuOpen = Boolean(menuAnchorEl);
+  const openMenu = (e: React.MouseEvent<HTMLButtonElement>) => setMenuAnchorEl(e.currentTarget);
+  const closeMenu = () => setMenuAnchorEl(null);
 
   useEffect(() => {
     fetchElections();
   }, []);
+
+  // If logged in but voter profile not loaded yet, fetch a lightweight profile
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!voterToken || voter) return;
+      try {
+        const data = await voterAPI.getMe(voterToken);
+        setVoter({
+          voterId: data.voter.voterId,
+          name: data.voter.name,
+          email: data.voter.email,
+          phone: data.voter.phone,
+          dept: data.voter.dept,
+          year: data.voter.year,
+        });
+      } catch {}
+    };
+    loadProfile();
+  }, [voterToken, voter, setVoter]);
 
   // Tick every second for countdown updates
   useEffect(() => {
@@ -125,6 +157,35 @@ const VoterHome: React.FC = () => {
 
   return (
     <Container maxWidth="lg" className="page-gradient">
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h4">Dashboard</Typography>
+        {voterToken && (
+          <>
+            <Button variant="outlined" endIcon={<ExpandMoreIcon />} onClick={openMenu}>Pages</Button>
+            <Button variant="text" color="error" startIcon={<LogoutIcon />} onClick={() => navigate('/logout')} sx={{ ml: 1 }}>Logout</Button>
+            <Menu
+              anchorEl={menuAnchorEl}
+              open={isMenuOpen}
+              onClose={closeMenu}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+              <MenuItem onClick={() => { closeMenu(); navigate('/dashboard'); }}>
+                <ListItemIcon><HomeIcon fontSize="small" /></ListItemIcon>
+                Dashboard
+              </MenuItem>
+              <MenuItem onClick={() => { closeMenu(); navigate('/account'); }}>
+                <ListItemIcon><AccountIcon fontSize="small" /></ListItemIcon>
+                My Account
+              </MenuItem>
+              <MenuItem onClick={() => { closeMenu(); navigate('/logout'); }}>
+                <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
+                Logout
+              </MenuItem>
+            </Menu>
+          </>
+        )}
+      </Box>
       <Box sx={{ mb: 4, textAlign: 'center' }}>
         <Typography variant="h3" component="h1" gutterBottom className="bg-gradient-to-r from-brand-700 to-brand-500 bg-clip-text text-transparent font-extrabold">
           E-Voting System
@@ -134,10 +195,57 @@ const VoterHome: React.FC = () => {
         </Typography>
       </Box>
 
+      {/* Help & Resources */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12}>
+          <Card className="card-hover rounded-xl">
+            <CardContent>
+              <Typography variant="h6" gutterBottom className="font-semibold">Help & Resources</Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={3}>
+                  <Button variant="outlined" fullWidth onClick={() => navigate('/privacy')}>Privacy</Button>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Button variant="outlined" fullWidth onClick={() => navigate('/terms')}>Terms</Button>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Button variant="outlined" fullWidth onClick={() => navigate('/accessibility')}>Accessibility</Button>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Button variant="outlined" fullWidth onClick={() => navigate('/contact')}>Contact</Button>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
+      )}
+
+      {voterToken && voter && (
+        <Card sx={{ mb: 3 }} className="rounded-xl">
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+              <AccountIcon color="primary" />
+              <Typography variant="h6">{voter.name || voter.voterId}</Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary">ID: {voter.voterId}</Typography>
+            {voter.email && <Typography variant="body2" color="text.secondary">Email: {voter.email}</Typography>}
+            {voter.phone && <Typography variant="body2" color="text.secondary">Phone: {voter.phone}</Typography>}
+            {(voter.dept || voter.year) && (
+              <Typography variant="body2" color="text.secondary">{voter.dept || ''} {voter.year ? `(Year ${voter.year})` : ''}</Typography>
+            )}
+            <Box sx={{ mt: 2 }}>
+              <Button variant="outlined" startIcon={<AccountIcon />} onClick={() => navigate('/account')}>
+                View Full Profile
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
       )}
 
       {/* Section: Currently running elections */}
@@ -272,6 +380,39 @@ const VoterHome: React.FC = () => {
             </Card>
           </Grid>
         ))}
+      </Grid>
+
+      {/* Extras: Quick Links, Announcements, Support */}
+      <Grid container spacing={3} sx={{ mt: 4 }}>
+        <Grid item xs={12} md={4}>
+          <Card className="card-hover rounded-xl">
+            <CardContent>
+              <Typography variant="h6" gutterBottom className="font-semibold">Quick Links</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Button variant="outlined" onClick={() => navigate('/elections')}>Browse Elections</Button>
+                <Button variant="outlined" onClick={() => navigate('/results-index')}>View Results</Button>
+                <Button variant="outlined" color="error" onClick={() => navigate('/logout')}>Logout</Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card className="card-hover rounded-xl">
+            <CardContent>
+              <Typography variant="h6" gutterBottom className="font-semibold">Announcements</Typography>
+              <Typography variant="body2" color="text.secondary">No new announcements.</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card className="card-hover rounded-xl">
+            <CardContent>
+              <Typography variant="h6" gutterBottom className="font-semibold">Support</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Need help with OTP or voting?</Typography>
+              <Button variant="contained" onClick={() => window.location.href = 'mailto:support@evote.local'}>Contact Support</Button>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
 
       {elections.length === 0 && (

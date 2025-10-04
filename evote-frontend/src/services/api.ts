@@ -147,6 +147,12 @@ export const voteAPI = {
     api.post(`/vote/${electionId}/cast`, { token, candidateId }).then(res => res.data),
 };
 
+// Public API (contact)
+export const publicAPI = {
+  contact: (payload: { name?: string; email: string; message: string }): Promise<{ ok: boolean }> =>
+    api.post('/public/contact', payload).then(res => res.data),
+};
+
 export default api;
 
 

@@ -382,36 +382,79 @@ router.post('/voters/add', verifyAdmin, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Missing electionId or voters array' });
     }
 
-    const docs = voters.map((v: any) => ({
-      voterId: (v.voterId || v.rollno)?.toString().trim(),
-      name: v.name?.toString().trim(),
-      rollno: (v.rollno || v.voterId)?.toString().trim(),
-      dept: v.dept?.toString().trim(),
-      year: v.year?.toString().trim(),
-      email: v.email ? v.email.toString().toLowerCase().trim() : undefined,
-      phone: v.phone ? v.phone.toString().trim() : undefined,
-      eligible: true,
-      assignedElections: [electionId]
+    // Ensure election exists
+    const election = await Election.findById(electionId);
+    if (!election) {
+      return res.status(404).json({ error: 'Election not found' });
+    }
+
+    // Normalize docs and build bulk upserts to avoid duplicate key errors on voterId
+    const desiredDocs = voters
+      .map((v: any) => {
+        const voterId = (v.voterId || v.rollno)?.toString().trim();
+        if (!voterId) return null;
+        return {
+          voterId,
+          name: v.name?.toString().trim(),
+          rollno: (v.rollno || v.voterId)?.toString().trim(),
+          dept: v.dept?.toString().trim(),
+          year: v.year?.toString().trim(),
+          email: v.email ? v.email.toString().toLowerCase().trim() : undefined,
+          phone: v.phone ? v.phone.toString().trim() : undefined,
+        };
+      })
+      .filter(Boolean) as Array<{
+        voterId: string;
+        name?: string;
+        rollno?: string;
+        dept?: string;
+        year?: string;
+        email?: string;
+        phone?: string;
+      }>;
+
+    if (desiredDocs.length === 0) {
+      return res.status(400).json({ error: 'No valid voters provided' });
+    }
+
+    const bulkOps = desiredDocs.map((d) => ({
+      updateOne: {
+        filter: { voterId: d.voterId },
+        update: {
+          $set: {
+            name: d.name,
+            rollno: d.rollno,
+            dept: d.dept,
+            year: d.year,
+            email: d.email,
+            phone: d.phone,
+            eligible: true,
+          },
+          $setOnInsert: { createdAt: new Date() },
+          $addToSet: { assignedElections: electionId },
+        },
+        upsert: true,
+      },
     }));
 
-    await Voter.insertMany(docs, { ordered: false });
+    const bulkRes = await Voter.bulkWrite(bulkOps, { ordered: false });
 
-    // Update election voter count
-    await Election.findByIdAndUpdate(electionId, {
-      $inc: { eligibleVoterCount: docs.length }
-    });
+    // Recalculate eligible voter count for the election
+    const eligibleCount = await Voter.countDocuments({ assignedElections: electionId, eligible: true });
+    await Election.findByIdAndUpdate(electionId, { $set: { eligibleVoterCount: eligibleCount } });
 
     await AuditLog.create({
       actorType: 'admin',
       actorId: req.adminId,
       action: 'add_voters',
-      metadata: { count: docs.length, electionId }
+      metadata: { count: desiredDocs.length, electionId }
     });
 
-    res.json({ ok: true, message: 'Voters added successfully', count: docs.length });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.json({ ok: true, message: 'Voters added successfully', count: desiredDocs.length, eligibleVoterCount: eligibleCount });
+  } catch (err: any) {
+    console.error('add_voters error:', err?.message || err);
+    const msg = err?.message || 'Internal server error';
+    res.status(500).json({ error: msg });
   }
 });
 

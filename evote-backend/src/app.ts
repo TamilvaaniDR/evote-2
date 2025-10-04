@@ -5,6 +5,7 @@ import { mongoConnect } from './utils/db';
 import authRoutes from './routes/auth';
 import voterRoutes from './routes/voter';
 import adminRoutes from './routes/admin';
+import publicRoutes from './routes/public';
 import voteRoutes from './routes/vote';
 import { errorHandler } from './middleware/errorHandler';
 import { 
@@ -82,6 +83,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/voter', voterRoutes);
 app.use('/api/vote', voteRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/public', publicRoutes);
 
 // Global error handler
 app.use(errorHandler);

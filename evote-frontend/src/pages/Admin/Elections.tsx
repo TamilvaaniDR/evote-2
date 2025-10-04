@@ -40,7 +40,7 @@ const Elections: React.FC = () => {
     description: '',
     startAt: '',
     endAt: '',
-    candidates: [{ id: '', name: '' }],
+    candidates: [{ id: '', name: '', photoUrl: '' }],
   });
   const navigate = useNavigate();
 
@@ -69,7 +69,7 @@ const Elections: React.FC = () => {
         description: '',
         startAt: '',
         endAt: '',
-        candidates: [{ id: '', name: '' }],
+        candidates: [{ id: '', name: '', photoUrl: '' }],
       });
       fetchElections();
     } catch (err: any) {
@@ -298,13 +298,24 @@ const Elections: React.FC = () => {
                 size="small"
                 fullWidth
               />
+              <TextField
+                label="Photo URL (optional)"
+                value={(candidate as any).photoUrl || ''}
+                onChange={(e) => {
+                  const candidates = [...newElection.candidates];
+                  (candidates[index] as any).photoUrl = e.target.value;
+                  setNewElection({ ...newElection, candidates });
+                }}
+                size="small"
+                fullWidth
+              />
             </Box>
           ))}
           <Button
             variant="outlined"
             onClick={() => setNewElection({
               ...newElection,
-              candidates: [...newElection.candidates, { id: '', name: '' }]
+              candidates: [...newElection.candidates, { id: '', name: '', photoUrl: '' }]
             })}
             sx={{ mt: 1 }}
           >

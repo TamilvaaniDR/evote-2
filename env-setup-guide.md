@@ -7,14 +7,17 @@
 - Enable 2-Factor Authentication
 - Generate an "App Password" for the e-voting system
 
-### 2. Environment Variables
+### 2. Environment Variables (OTP + Contact Email)
 Add these to your `.env` file:
 
 ```bash
 # Email Configuration
 ENABLE_EMAIL_OTP=true
-EMAIL_USER=your-email@gmail.com
+EMAIL_SERVICE=gmail
+EMAIL_USER=drtamilvaani2006@gmail.com
 EMAIL_PASS=your-16-character-app-password
+# Contact recipient (defaults to EMAIL_USER if omitted)
+CONTACT_EMAIL=drtamilvaani2006@gmail.com
 ```
 
 ### 3. Test Email Setup
@@ -148,4 +151,5 @@ npm install --save-dev @types/nodemailer
 - Enable rate limiting in production
 - Monitor OTP usage for abuse
 - Consider IP-based rate limiting for production
+
 

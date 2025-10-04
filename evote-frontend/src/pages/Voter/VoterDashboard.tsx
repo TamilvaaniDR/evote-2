@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Container, Typography, Card, CardContent, TextField, Button, Alert, CircularProgress, Chip, Divider } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Box, Container, Typography, Card, CardContent, TextField, Button, Alert, CircularProgress, Chip, Divider, Menu, MenuItem, ListItemIcon, IconButton, Tooltip } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
 import { voterAPI } from '../../services/api';
 import { Election } from '../../types';
 import { useVoter } from '../../contexts/VoterContext';
-import { HowToVote as VoteIcon, Logout as LogoutIcon, AccountCircle as AccountIcon, Assessment as ResultsIcon } from '@mui/icons-material';
+import { HowToVote as VoteIcon, Logout as LogoutIcon, AccountCircle as AccountIcon, Assessment as ResultsIcon, Home as HomeIcon, ExpandMore as ExpandMoreIcon, ContentCopy as CopyIcon, DeleteOutline as ClearIcon } from '@mui/icons-material';
 
 const VoterDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +22,38 @@ const VoterDashboard: React.FC = () => {
   const [running, setRunning] = useState<Election[]>([]);
   const [upcoming, setUpcoming] = useState<Election[]>([]);
   const [closed, setClosed] = useState<Election[]>([]);
+
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const isMenuOpen = Boolean(menuAnchorEl);
+
+  const openMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setMenuAnchorEl(event.currentTarget);
+  };
+
+  const closeMenu = () => setMenuAnchorEl(null);
+
+  // Persist and display OTPs per identifier for easy access when switching voters
+  type OtpEntry = { otp: string; deliveryMethod?: string; savedAt: number };
+  const [otpHistory, setOtpHistory] = useState<Record<string, OtpEntry>>(() => {
+    try {
+      const raw = localStorage.getItem('voterOtpHistory');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const saveOtpToHistory = (id: string, otpValue: string | null, method?: string) => {
+    if (!otpValue) return;
+    const next = { ...otpHistory, [id]: { otp: otpValue, deliveryMethod: method, savedAt: Date.now() } };
+    setOtpHistory(next);
+    try { localStorage.setItem('voterOtpHistory', JSON.stringify(next)); } catch {}
+  };
+
+  const clearOtpHistory = () => {
+    setOtpHistory({});
+    localStorage.removeItem('voterOtpHistory');
+  };
 
   const fetchMe = async (token: string) => {
     try {
@@ -51,6 +83,7 @@ const VoterDashboard: React.FC = () => {
     if (voterToken) {
       fetchMe(voterToken);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voterToken]);
 
   const startLogin = async () => {
@@ -62,6 +95,7 @@ const VoterDashboard: React.FC = () => {
       console.log(`[DEBUG] Login start response:`, res);
       setDevOtp(res.devOtp || null);
       setDeliveryMethod(res.deliveryMethod || 'console');
+      saveOtpToHistory(identifier, res.devOtp || null, res.deliveryMethod);
       setStep('verify');
     } catch (e: any) {
       console.error(`[DEBUG] Login start error:`, e);
@@ -97,6 +131,7 @@ const VoterDashboard: React.FC = () => {
       console.log(`[DEBUG] Regenerate OTP response:`, res);
       setDevOtp(res.devOtp || null);
       setDeliveryMethod(res.deliveryMethod || 'console');
+      saveOtpToHistory(identifier, res.devOtp || null, res.deliveryMethod);
     } catch (e: any) {
       console.error(`[DEBUG] Regenerate OTP error:`, e);
       setError(e?.response?.data?.error || 'Failed to regenerate OTP');
@@ -212,12 +247,105 @@ const VoterDashboard: React.FC = () => {
     <Container maxWidth="lg">
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">My Account</Typography>
-        {voterToken && (
-          <Button variant="text" color="error" startIcon={<LogoutIcon />} onClick={logout}>Logout</Button>
-        )}
+        <>
+          <Button
+            variant="outlined"
+            color="primary"
+            endIcon={<ExpandMoreIcon />}
+            onClick={openMenu}
+          >
+            Pages
+          </Button>
+          <Button
+            variant="text"
+            color="error"
+            startIcon={<LogoutIcon />}
+            onClick={logout}
+            sx={{ ml: 1 }}
+          >
+            Logout
+          </Button>
+          <Menu
+            anchorEl={menuAnchorEl}
+            open={isMenuOpen}
+            onClose={closeMenu}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          >
+            <MenuItem onClick={() => { closeMenu(); navigate('/home'); }}>
+              <ListItemIcon>
+                <HomeIcon fontSize="small" />
+              </ListItemIcon>
+              Home
+            </MenuItem>
+            <MenuItem onClick={() => { closeMenu(); navigate('/account'); }}>
+              <ListItemIcon>
+                <AccountIcon fontSize="small" />
+              </ListItemIcon>
+              My Account
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={() => { closeMenu(); navigate('/logout'); }}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              Logout
+            </MenuItem>
+          </Menu>
+        </>
       </Box>
 
+      {Object.keys(otpHistory).length > 0 && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="subtitle1">Developer OTPs</Typography>
+              <Tooltip title="Clear OTP list">
+                <IconButton size="small" onClick={clearOtpHistory}>
+                  <ClearIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+            <Grid container spacing={1}>
+              {Object.entries(otpHistory)
+                .sort((a, b) => b[1].savedAt - a[1].savedAt)
+                .map(([id, entry]) => (
+                  <Grid item xs={12} md={6} key={id}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                      <Box>
+                        <Typography variant="body2" fontWeight={600}>{id}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          OTP: {entry.otp} {entry.deliveryMethod ? `(via ${entry.deliveryMethod})` : ''}
+                        </Typography>
+                      </Box>
+                      <Tooltip title="Copy OTP">
+                        <IconButton size="small" onClick={() => navigator.clipboard.writeText(entry.otp)}>
+                          <CopyIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </Grid>
+                ))}
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {/* Quick Actions - non-invasive enhancements */}
+      {step === 'ready' && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 1 }}>Quick Actions</Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              <Button variant="outlined" onClick={() => navigate('/home')}>Browse Elections</Button>
+              <Button variant="outlined" onClick={() => navigate('/account')}>View Profile</Button>
+              <Button variant="outlined" color="error" onClick={() => navigate('/logout')}>Logout</Button>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
 
       {step !== 'ready' && (
         <Card sx={{ mb: 3 }}>
@@ -284,7 +412,7 @@ const VoterDashboard: React.FC = () => {
 
           <Section title="Running Elections" items={running} showVote showResults={false} />
           <Section title="Upcoming Elections" items={upcoming} showVote={false} showResults={false} />
-          <Section title="Closed Elections" items={closed} showVote={false} showResults />
+          <Section title="Closed Elections" items={closed} showVote={false} showResults={true} />
         </>
       )}
     </Container>

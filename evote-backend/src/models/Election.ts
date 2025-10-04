@@ -3,6 +3,7 @@ import { Schema, model } from 'mongoose';
 const CandidateSchema = new Schema({ 
   id: { type: String, required: true }, 
   name: { type: String, required: true }, 
+  photoUrl: { type: String },
   meta: Schema.Types.Mixed 
 });
 

@@ -21,8 +21,16 @@ import Imports from './pages/Admin/Imports';
 import VoterHome from './pages/Voter/VoterHome';
 import VotePage from './pages/Voter/VotePage';
 import ResultsPage from './pages/Voter/ResultsPage';
+import ResultsIndex from './pages/Voter/ResultsIndex';
 import VoteSuccess from './pages/Voter/VoteSuccess';
 import VoterDashboard from './pages/Voter/VoterDashboard';
+import VoterLayout from './components/Layout/VoterLayout';
+import VoterLogout from './pages/Voter/Logout';
+import VoterElections from './pages/Voter/Elections';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import Accessibility from './pages/Accessibility';
+import Contact from './pages/Contact';
 
 const theme = createTheme({
   palette: {
@@ -119,14 +127,24 @@ const App: React.FC = () => {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             {/* Redirect generic vote/results routes to appropriate pages */}
-            <Route path="/vote" element={<Navigate to="/home" />} />
-            <Route path="/results" element={<Navigate to="/home" />} />
+            <Route path="/vote" element={<Navigate to="/dashboard" />} />
+            <Route path="/results" element={<Navigate to="/dashboard" />} />
 
             {/* Admin login */}
             <Route path="/admin/login" element={<LoginForm />} />
-            {/* Existing Public Routes (kept for backward-compat) */}
-            <Route path="/home" element={<VoterHome />} />
-            <Route path="/account" element={<VoterDashboard />} />
+            {/* Voter routes */}
+            <Route path="/dashboard" element={<VoterLayout><VoterHome /></VoterLayout>} />
+            {/* Backward compatibility */}
+            <Route path="/home" element={<Navigate to="/dashboard" />} />
+            {/* Public info */}
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/accessibility" element={<Accessibility />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/account" element={<VoterLayout><VoterDashboard /></VoterLayout>} />
+            <Route path="/elections" element={<VoterLayout><VoterElections /></VoterLayout>} />
+            <Route path="/results-index" element={<VoterLayout><ResultsIndex /></VoterLayout>} />
+            <Route path="/logout" element={<VoterLogout />} />
             <Route path="/vote/:electionId" element={<VotePage />} />
             <Route path="/results/:electionId" element={<ResultsPage />} />
             <Route path="/vote/success" element={<VoteSuccess />} />

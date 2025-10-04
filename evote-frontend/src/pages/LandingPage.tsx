@@ -32,6 +32,7 @@ const LandingPage: React.FC = () => {
               Learn More
             </Button>
           </Stack>
+          {/* Footer already contains Terms and Contact links */}
         </Box>
 
         {/* Feature highlights */}

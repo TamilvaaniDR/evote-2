@@ -17,6 +17,7 @@ import {
   FormControlLabel,
   FormControl,
   FormLabel,
+  Avatar,
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { voterAPI, voteAPI } from '../../services/api';
@@ -217,7 +218,14 @@ const VotePage: React.FC = () => {
                       key={candidate.id}
                       value={candidate.id}
                       control={<Radio />}
-                      label={candidate.name}
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {candidate.photoUrl && (
+                            <Avatar src={candidate.photoUrl} alt={candidate.name} sx={{ width: 28, height: 28 }} />
+                          )}
+                          {candidate.name}
+                        </Box>
+                      }
                     />
                   ))}
                 </RadioGroup>

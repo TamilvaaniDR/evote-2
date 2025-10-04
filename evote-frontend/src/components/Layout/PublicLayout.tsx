@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppBar, Toolbar, Container, Typography, Box, Button, Stack, Link as MuiLink } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 
 type PublicLayoutProps = {
   children: React.ReactNode;
@@ -33,9 +33,9 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between">
             <Typography variant="body2">© {new Date().getFullYear()} E‑Voting. All rights reserved.</Typography>
             <Stack direction="row" spacing={2}>
-              <MuiLink href="#" underline="hover" color="inherit" sx={{ opacity: 0.9 }}>Privacy</MuiLink>
-              <MuiLink href="#" underline="hover" color="inherit" sx={{ opacity: 0.9 }}>Terms</MuiLink>
-              <MuiLink href="#" underline="hover" color="inherit" sx={{ opacity: 0.9 }}>Contact</MuiLink>
+              <MuiLink component={RouterLink} to="/privacy" underline="hover" color="inherit" sx={{ opacity: 0.9 }}>Privacy</MuiLink>
+              <MuiLink component={RouterLink} to="/terms" underline="hover" color="inherit" sx={{ opacity: 0.9 }}>Terms</MuiLink>
+              <MuiLink component={RouterLink} to="/contact" underline="hover" color="inherit" sx={{ opacity: 0.9 }}>Contact</MuiLink>
             </Stack>
           </Stack>
         </Container>

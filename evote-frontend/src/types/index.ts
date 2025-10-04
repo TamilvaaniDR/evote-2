@@ -16,6 +16,7 @@ export interface Election {
 export interface Candidate {
   id: string;
   name: string;
+  photoUrl?: string;
   meta?: any;
 }
 
